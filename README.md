@@ -1,4 +1,4 @@
-# Matrix processor
+# Minesweeper
 
 Console version of classic minesweeper game.
 
