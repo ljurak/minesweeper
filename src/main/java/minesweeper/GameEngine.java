@@ -12,6 +12,8 @@ public class GameEngine {
 
     private int[][] board;
 
+    private int[][] userBoard;
+
     private int size;
 
     private int minesNumber;
@@ -20,15 +22,21 @@ public class GameEngine {
 
     private int fieldsMarked = 0;
 
+    private int fieldsRevealed = 0;
+
+    private boolean gameLost = false;
+
     private Set<Integer> mineIndexes = new HashSet<>();
 
     private Random random = new Random();
 
     public GameEngine(int size, int minesNumber) {
         this.board = new int[size][size];
+        this.userBoard = new int[size][size];
         this.size = size;
         this.minesNumber = minesNumber;
         fillBoard(minesNumber);
+        fillUserBoard();
     }
 
     public GameEngine(int minesNumber) {
@@ -39,8 +47,12 @@ public class GameEngine {
         this(DEFAULT_SIZE, DEFAULT_MINES_NUMBER);
     }
 
-    public int[][] getBoard() {
-        return board;
+    public int[][] getUserBoard() {
+        return userBoard;
+    }
+
+    public boolean isGameLost() {
+        return gameLost;
     }
 
     private void fillBoard(int minesNumber) {
@@ -62,6 +74,14 @@ public class GameEngine {
         }
 
         countMines();
+    }
+
+    private void fillUserBoard() {
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                userBoard[i][j] = -1;
+            }
+        }
     }
 
     private void countMines() {
@@ -95,29 +115,73 @@ public class GameEngine {
     }
 
     public boolean markField(int row, int col) {
-        // cannot mark field with positive number, they are guaranteed to be free of mines
-        if (board[row][col] > 0) {
+        // if the field is already revealed do nothing
+        if (userBoard[row][col] >= 0) {
             return false;
-        } else if (board[row][col] == -2) { // unmark field
-            if (mineIndexes.contains(row * size + col)) {
-                board[row][col] = -1;
-                minesMarked--;
-            } else {
-                board[row][col] = 0;
-            }
-            fieldsMarked--;
-        } else { // mark field
-            board[row][col] = -2;
+        }
+
+        if (userBoard[row][col] == -1) { // set the field marked
+            userBoard[row][col] = -2;
             fieldsMarked++;
-            if (mineIndexes.contains(row * size + col)) {
+            if (board[row][col] == -1) {
                 minesMarked++;
+            }
+        } else { // set the field unmarked
+            userBoard[row][col] = -1;
+            fieldsMarked--;
+            if (board[row][col] == -1) {
+                minesMarked--;
             }
         }
 
         return true;
     }
 
+    public boolean revealField(int row, int col) {
+        // if the field is already revealed do nothing
+        if (userBoard[row][col] >= 0) {
+            return false;
+        }
+
+        if (board[row][col] > 0) {
+            userBoard[row][col] = board[row][col];
+            fieldsRevealed++;
+        } else if (board[row][col] == 0) {
+            userBoard[row][col] = 0;
+            fieldsRevealed++;
+            revealAdjacentFields(row, col);
+        } else {
+            gameLost = true;
+            revealMines();
+        }
+
+        return true;
+    }
+
+    private void revealAdjacentFields(int row, int col) {
+        for (int i = Math.max(0, row - 1); i <= Math.min(size - 1, row + 1); i++) {
+            for (int j = Math.max(0, col - 1); j <= Math.min(size - 1, col + 1); j++) {
+                if (userBoard[i][j] >= 0) {
+                    continue;
+                }
+
+                if (board[i][j] > 0) {
+                    userBoard[i][j] = board[i][j];
+                    fieldsRevealed++;
+                } else if (board[i][j] == 0) {
+                    userBoard[i][j] = 0;
+                    fieldsRevealed++;
+                    revealAdjacentFields(i, j);
+                }
+            }
+        }
+    }
+
+    private void revealMines() {
+        mineIndexes.forEach(index -> userBoard[index / size][index % size] = -3);
+    }
+
     public boolean checkVictory() {
-        return minesMarked == minesNumber && fieldsMarked == minesNumber;
+        return (minesMarked == minesNumber && fieldsMarked == minesNumber) || (fieldsRevealed + minesNumber == size * size);
     }
 }
