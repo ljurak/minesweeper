@@ -1,38 +1,74 @@
 package minesweeper;
 
-import java.util.Random;
 import java.util.Scanner;
 
 public class Main {
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
+
         System.out.print("How many mines do you want on the field? ");
         int mines = scanner.nextInt();
-        byte[][] board = new byte[9][9];
-        initBoard(board, mines);
-        printBoard(board);
-    }
+        GameEngine game = new GameEngine(mines);
+        printBoard(game.getBoard());
 
-    private static void initBoard(byte[][] board, int mines) {
-        Random random = new Random();
+        boolean finished = false;
+        while (!finished) {
+            int row;
+            int col;
+            boolean inputCorrect = true;
+            do {
+                if (!inputCorrect) {
+                    System.out.println("There is a number here!");
+                }
 
-        int count = 0;
-        while (count < mines) {
-            int cell = random.nextInt(81);
-            if (board[cell / 9][cell % 9] == 0) {
-                board[cell / 9][cell % 9] = 1;
-                count++;
-            }
-        }
-    }
+                System.out.print("Set/delete mines marks (x and y coordinates): ");
+                col = scanner.nextInt();
+                row = scanner.nextInt();
+            } while (!(inputCorrect = game.markField(row - 1, col - 1)));
 
-    private static void printBoard(byte[][] board) {
-        for (byte[] row : board) {
-            for (byte cell : row) {
-                System.out.print(cell == 0 ? "." : "X");
-            }
             System.out.println();
+            printBoard(game.getBoard());
+
+            if (game.checkVictory()) {
+                System.out.println("Congratulations! You found all mines!");
+                finished = true;
+            }
         }
+    }
+
+    private static void printBoard(int[][] board) {
+        System.out.print("  |");
+        for (int i = 0; i < board.length; i++) {
+            System.out.printf("%3d", i + 1);
+        }
+        System.out.println("|");
+
+        System.out.print("--|");
+        for (int i = 0; i < board.length; i++) {
+            System.out.printf("---");
+        }
+        System.out.println("|");
+
+        for (int i = 0; i < board.length; i++) {
+            System.out.printf("%2d|", i + 1);
+            for (int cell : board[i]) {
+                if (cell == -2) {
+                    System.out.print("  *");
+                } else if  (cell <= 0) {
+                    System.out.print("  .");
+                } else {
+                    System.out.printf("%3d", cell);
+                }
+
+            }
+            System.out.println("|");
+        }
+
+        System.out.print("--|");
+        for (int i = 0; i < board.length; i++) {
+            System.out.print("---");
+        }
+        System.out.println("|");
     }
 }
