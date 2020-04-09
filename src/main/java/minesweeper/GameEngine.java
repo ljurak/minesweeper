@@ -1,8 +1,6 @@
 package minesweeper;
 
-import java.util.HashSet;
 import java.util.Random;
-import java.util.Set;
 
 public class GameEngine {
 
@@ -10,13 +8,13 @@ public class GameEngine {
 
     private static final int DEFAULT_MINES_NUMBER = 10;
 
-    private int[][] board;
+    private final int[][] board;
 
-    private int[][] userBoard;
+    private final int[][] userBoard;
 
-    private int size;
+    private final int size;
 
-    private int minesNumber;
+    private final int minesNumber;
 
     private int minesMarked = 0;
 
@@ -26,9 +24,7 @@ public class GameEngine {
 
     private boolean gameLost = false;
 
-    private Set<Integer> mineIndexes = new HashSet<>();
-
-    private Random random = new Random();
+    private final Random random = new Random();
 
     public GameEngine(int size, int minesNumber) {
         this.board = new int[size][size];
@@ -68,7 +64,6 @@ public class GameEngine {
             int col = cell % size;
             if (board[row][col] == 0) {
                 board[row][col] = -1;
-                mineIndexes.add(cell);
                 count++;
             }
         }
@@ -142,7 +137,14 @@ public class GameEngine {
         if (userBoard[row][col] >= 0) {
             return false;
         }
-
+        // if field was marked remove the mark
+        if (userBoard[row][col] == -2) {
+            fieldsMarked--;
+            if (board[row][col] == -1) {
+                minesMarked--;
+            }
+        }
+        // reveal field
         if (board[row][col] > 0) {
             userBoard[row][col] = board[row][col];
             fieldsRevealed++;
@@ -161,10 +163,15 @@ public class GameEngine {
     private void revealAdjacentFields(int row, int col) {
         for (int i = Math.max(0, row - 1); i <= Math.min(size - 1, row + 1); i++) {
             for (int j = Math.max(0, col - 1); j <= Math.min(size - 1, col + 1); j++) {
+                // if the field is already revealed do nothing
                 if (userBoard[i][j] >= 0) {
                     continue;
                 }
-
+                // if field was marked remove the mark
+                if (userBoard[i][j] == -2) {
+                    fieldsMarked--;
+                }
+                // reveal field
                 if (board[i][j] > 0) {
                     userBoard[i][j] = board[i][j];
                     fieldsRevealed++;
@@ -178,7 +185,13 @@ public class GameEngine {
     }
 
     private void revealMines() {
-        mineIndexes.forEach(index -> userBoard[index / size][index % size] = -3);
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                if (board[i][j] == -1) {
+                    userBoard[i][j] = -3;
+                }
+            }
+        }
     }
 
     public boolean checkVictory() {
